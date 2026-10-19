@@ -15,22 +15,20 @@ Methylation_direction = function(beta_matrix, gbdmr_list, contrast_boolean) {
     stop("Beta matrix's column and the contrast input must have the same size.")
   }
   
-  if (class(gbdmr_list) == "character") {
+  vector_input = is.null(dim(gbdmr_list))
+  if (vector_input && is.character(gbdmr_list)) {
     differential.cpg = intersect(rownames(beta_matrix), gbdmr_list)
-  }
-  
-  if (class(gbdmr_list) == "numeric" | class(gbdmr_list) == "boolean") {
+  } else if (vector_input && (is.numeric(gbdmr_list) || is.logical(gbdmr_list))) {
     differential.cpg = rownames(beta_matrix)[gbdmr_list]
+  } else if (is.list(gbdmr_list) && !is.data.frame(gbdmr_list) &&
+             identical(names(gbdmr_list)[5], "positive_cpg")) {
+    differential.cpg = gbdmr_list$positive_cpg
+  } else {
+    stop("gbdmr_list must be a character vector of CpG ids, a numeric or logical index vector, or a gbdmr output list with \"positive_cpg\" as its fifth element.")
   }
   
-  if (class(gbdmr_list) == "list") {
-    if (names(gbdmr_list)[5] == "positive_cpg") {
-      differential.cpg = gbdmr_list$positive_cpg
-    }
-  }
-  
-  averagebeta.T = rowMeans(subset(beta[differential.cpg, ], select=contrast_boolean))
-  averagebeta.F = rowMeans(subset(beta[differential.cpg, ], select=!contrast_boolean))
+  averagebeta.T = rowMeans(beta_matrix[differential.cpg, contrast_boolean, drop = FALSE])
+  averagebeta.F = rowMeans(beta_matrix[differential.cpg, !contrast_boolean, drop = FALSE])
   
   deltabeta = averagebeta.T - averagebeta.F
   
